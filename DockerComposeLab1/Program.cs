@@ -52,13 +52,40 @@ namespace DockerComposeLab1
 
             }
 
-            app.MapGet("/products", async (ProductContext db) => await db.Products.ToListAsync());
+            app.MapGet("/products", async (ProductContext db) =>
+       await db.Products.ToListAsync());
+
+            app.MapGet("/products/{id}", async (ProductContext db, int id) =>
+                await db.Products.FindAsync(id) is Product product
+                    ? Results.Ok(product)
+                    : Results.NotFound());
 
             app.MapPost("/products", async (ProductContext db, Product product) =>
             {
                 db.Products.Add(product);
                 await db.SaveChangesAsync();
-                return Results.Ok();
+                return Results.Created($"/products/{product.Id}", product);
+            });
+
+            app.MapPut("/products/{id}", async (ProductContext db, int id, Product updatedProduct) =>
+            {
+                var product = await db.Products.FindAsync(id);
+                if (product is null) return Results.NotFound();
+
+                product.Name = updatedProduct.Name;
+                product.Price = updatedProduct.Price;
+                await db.SaveChangesAsync();
+                return Results.Ok(product);
+            });
+
+            app.MapDelete("/products/{id}", async (ProductContext db, int id) =>
+            {
+                var product = await db.Products.FindAsync(id);
+                if (product is null) return Results.NotFound();
+
+                db.Products.Remove(product);
+                await db.SaveChangesAsync();
+                return Results.NoContent();
             });
 
 
